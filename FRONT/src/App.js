@@ -1,4 +1,49 @@
 import React, { useState, useEffect } from "react";
+import axios from "axios";
+
+const API_URL = "http://localhost:8080/api/tasks"; // Ваш URL бэкенда
+
+// Получение задач с сервера
+const fetchTasks = async () => {
+  try {
+    const response = await axios.get(API_URL);
+    return response.data;
+  } catch (error) {
+    console.error("Ошибка при загрузке задач:", error);
+  }
+};
+
+// Добавление задачи на сервер
+const addTask = async (task) => {
+  try {
+    const response = await axios.post(API_URL, task);
+    return response.data;
+  } catch (error) {
+    console.error("Ошибка при добавлении задачи:", error);
+  }
+};
+
+// Удаление задачи
+const deleteTask = async (id) => {
+  try {
+    await axios.delete(`${API_URL}/${id}`);
+  } catch (error) {
+    console.error("Ошибка при удалении задачи:", error);
+  }
+};
+
+// Завершение задачи
+const completeTask = async (id) => {
+  try {
+    const response = await axios.put(`${API_URL}/${id}/done`);
+    return response.data;
+  } catch (error) {
+    console.error("Ошибка при завершении задачи:", error);
+  }
+};
+
+
+
 
 // Функция для форматирования оставшегося времени в HH:MM:SS
 const formatRemainingTime = (date) => {
@@ -32,11 +77,15 @@ function App() {
 
   // Сохраняем задачи в localStorage при каждом изменении
   useEffect(() => {
-    localStorage.setItem("tasks", JSON.stringify(tasks));
-  }, [tasks]);
+    const loadTasks = async () => {
+      const loadedTasks = await fetchTasks();
+      setTasks(loadedTasks || []); // Обновляем список задач
+    };
+    loadTasks();
+  }, []);
 
   // Добавление новой задачи
-  const handleAddTask = () => {
+  const handleAddTask = async () => {
     if (!taskName || !taskDate) {
       alert("Введите название и дату для задачи!");
       return;
@@ -51,6 +100,9 @@ function App() {
       done: false, // Указывает, выполнена ли задача
     };
 
+    const addedTask = await addTask(newTask);
+    if (addedTask) setTasks([...tasks, addedTask]);
+
     setTasks([...tasks, newTask]);
     setTaskName("");
     setTaskDate("");
@@ -59,17 +111,21 @@ function App() {
   };
 
   // Удаление задачи
-  const handleDeleteTask = (id) => {
+  const handleDeleteTask = async (id) => {
+    await deleteTask(id);
     setTasks(tasks.filter((task) => task.id !== id));
   };
 
   // Завершение задачи
-  const handleCompleteTask = (id) => {
-    setTasks(
-      tasks.map((task) =>
-        task.id === id ? { ...task, done: true } : task
-      )
-    );
+  const handleCompleteTask = async (id) => {
+    const updatedTask = await completeTask(id);
+    if (updatedTask) {
+      setTasks(
+        tasks.map((task) =>
+          task.id === id ? { ...task, done: true } : task
+        )
+      );
+    }
   };
 
   // Фильтрация задач
