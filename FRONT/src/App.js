@@ -10,6 +10,7 @@ const fetchTasks = async () => {
     return response.data;
   } catch (error) {
     console.error("Ошибка при загрузке задач:", error);
+    return [];
   }
 };
 
@@ -42,9 +43,6 @@ const completeTask = async (id) => {
   }
 };
 
-
-
-
 // Функция для форматирования оставшегося времени в HH:MM:SS
 const formatRemainingTime = (date) => {
   const now = new Date();
@@ -60,31 +58,39 @@ const formatRemainingTime = (date) => {
 };
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loginInput, setLoginInput] = useState("");
+  const [passwordInput, setPasswordInput] = useState("");
+
   const [tasks, setTasks] = useState([]);
   const [taskName, setTaskName] = useState("");
   const [taskDate, setTaskDate] = useState("");
   const [taskDescription, setTaskDescription] = useState("");
   const [taskLink, setTaskLink] = useState("");
-  const [filter, setFilter] = useState("doing"); // Фильтр для отображения задач
+  const [filter, setFilter] = useState("doing");
 
-  // Загружаем задачи из localStorage при запуске
-  useEffect(() => {
-    const savedTasks = localStorage.getItem("tasks");
-    if (savedTasks) {
-      setTasks(JSON.parse(savedTasks));
+  const handleLogin = () => {
+    // Примитивная проверка логина и пароля
+    if (loginInput === "admin" && passwordInput === "admin") {
+      setIsAuthenticated(true);
+    } else {
+      alert("Неверный логин или пароль");
     }
-  }, []);
+  };
 
-  // Сохраняем задачи в localStorage при каждом изменении
   useEffect(() => {
-    const loadTasks = async () => {
-      const loadedTasks = await fetchTasks();
-      setTasks(loadedTasks || []); // Обновляем список задач
-    };
-    loadTasks();
-  }, []);
+    if (isAuthenticated) {
+      const loadTasks = async () => {
+        const loadedTasks = await fetchTasks();
+        const convertedTasks = loadedTasks.map(task => {
+          return { ...task, date: new Date(task.date) };
+        });
+        setTasks(convertedTasks);
+      };
+      loadTasks();
+    }
+  }, [isAuthenticated]);
 
-  // Добавление новой задачи
   const handleAddTask = async () => {
     if (!taskName || !taskDate) {
       alert("Введите название и дату для задачи!");
@@ -92,63 +98,84 @@ function App() {
     }
 
     const newTask = {
-      id: Date.now(),
       name: taskName,
       description: taskDescription,
       date: new Date(taskDate),
       link: taskLink,
-      done: false, // Указывает, выполнена ли задача
+      done: false
     };
 
     const addedTask = await addTask(newTask);
-    if (addedTask) setTasks([...tasks, addedTask]);
+    if (addedTask) {
+      addedTask.date = new Date(addedTask.date);
+      setTasks((prevTasks) => [...prevTasks, addedTask]);
+    }
 
-    setTasks([...tasks, newTask]);
     setTaskName("");
     setTaskDate("");
     setTaskDescription("");
     setTaskLink("");
   };
 
-  // Удаление задачи
   const handleDeleteTask = async (id) => {
     await deleteTask(id);
     setTasks(tasks.filter((task) => task.id !== id));
   };
 
-  // Завершение задачи
   const handleCompleteTask = async (id) => {
     const updatedTask = await completeTask(id);
     if (updatedTask) {
+      updatedTask.date = new Date(updatedTask.date);
       setTasks(
         tasks.map((task) =>
-          task.id === id ? { ...task, done: true } : task
+          task.id === id ? updatedTask : task
         )
       );
     }
   };
 
-  // Фильтрация задач
   const now = new Date();
   const filteredTasks = tasks.filter((task) => {
     if (filter === "doing") return !task.done && task.date > now;
     if (filter === "done") return task.done;
-    if (filter === "overdue") return !task.done && task.date <= now; // Просроченные задачи
+    if (filter === "overdue") return !task.done && task.date <= now;
     return true;
   });
 
-  // Эффект для обновления оставшегося времени каждую секунду
   useEffect(() => {
     const timer = setInterval(() => {
-      setTasks((prevTasks) => [...prevTasks]);
+      if (isAuthenticated) setTasks((prevTasks) => [...prevTasks]);
     }, 1000);
-
     return () => clearInterval(timer);
-  }, []);
+  }, [isAuthenticated]);
 
+  if (!isAuthenticated) {
+    // Отображаем форму логина, если пользователь не авторизован
+    return (
+      <div style={styles.loginContainer}>
+        <h2>Login</h2>
+        <input
+          type="text"
+          placeholder="Login"
+          value={loginInput}
+          onChange={(e) => setLoginInput(e.target.value)}
+          style={styles.input}
+        />
+        <input
+          type="password"
+          placeholder="password"
+          value={passwordInput}
+          onChange={(e) => setPasswordInput(e.target.value)}
+          style={styles.input}
+        />
+        <button onClick={handleLogin} style={styles.button}>Sign in</button>
+      </div>
+    );
+  }
+
+  // Если авторизован - основной интерфейс
   return (
     <div>
-      {/* Градиентная анимация */}
       <style>
         {`
           @keyframes gradientBG {
@@ -159,19 +186,18 @@ function App() {
         `}
       </style>
       <div style={styles.container}>
-        <h1 style={styles.title}>Task Timer App</h1>
+        <h1 style={styles.title}>Banana Tasks</h1>
 
-        {/* Форма для добавления задачи */}
         <div style={styles.inputContainer}>
           <input
             type="text"
-            placeholder="Название задачи"
+            placeholder="Task name"
             value={taskName}
             onChange={(e) => setTaskName(e.target.value)}
             style={styles.input}
           />
           <textarea
-            placeholder="Описание задачи"
+            placeholder="Description of Tasks"
             value={taskDescription}
             onChange={(e) => setTaskDescription(e.target.value)}
             style={styles.textarea}
@@ -184,39 +210,37 @@ function App() {
           />
           <input
             type="url"
-            placeholder="Ссылка на источник"
+            placeholder="Links"
             value={taskLink}
             onChange={(e) => setTaskLink(e.target.value)}
             style={styles.input}
           />
           <button onClick={handleAddTask} style={styles.button}>
-            Добавить задачу
+          Add a TASK
           </button>
         </div>
 
-        {/* Фильтры */}
         <div style={styles.filterContainer}>
           <button
             onClick={() => setFilter("doing")}
             style={filter === "doing" ? styles.activeFilter : styles.filterButton}
           >
-            Делается
+            To-do
           </button>
           <button
             onClick={() => setFilter("done")}
             style={filter === "done" ? styles.activeFilter : styles.filterButton}
           >
-            Сделано
+            Done
           </button>
           <button
             onClick={() => setFilter("overdue")}
             style={filter === "overdue" ? styles.activeFilter : styles.filterButton}
           >
-            Просрочено
+            Overdue
           </button>
         </div>
 
-        {/* Список задач */}
         <div style={styles.taskList}>
           {filteredTasks.map((task) => (
             <div
@@ -229,32 +253,36 @@ function App() {
             >
               <h2 style={styles.taskName}>{task.name}</h2>
               <p style={styles.taskDescription}>
-                <strong>Описание:</strong> {task.description}
+                <strong>descriptions:</strong> {task.description}
               </p>
               {task.link && (
                 <p style={styles.taskLink}>
-                  <strong>Источник:</strong>{" "}
+                  <strong>Source:</strong>{" "}
                   <a href={task.link} target="_blank" rel="noopener noreferrer">
                     {task.link}
                   </a>
                 </p>
               )}
-              <p style={styles.taskTime}>
-                Оставшееся время: {formatRemainingTime(task.date)}
-              </p>
+
+              {!task.done && (
+                <p style={styles.taskTime}>
+                  Remaining time: {formatRemainingTime(task.date)}
+                </p>
+              )}
+
               {!task.done && (
                 <button
                   onClick={() => handleCompleteTask(task.id)}
                   style={styles.completeButton}
                 >
-                  Завершено
+                  Done
                 </button>
               )}
               <button
                 onClick={() => handleDeleteTask(task.id)}
                 style={styles.deleteButton}
               >
-                Удалить
+                Delete
               </button>
             </div>
           ))}
@@ -264,7 +292,17 @@ function App() {
   );
 }
 
+
 const styles = {
+  loginContainer: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    height: "100vh",
+    gap: "10px",
+    background: "linear-gradient(135deg, #ff9a9e, #fad0c4)",
+  },
   container: {
     textAlign: "center",
     fontFamily: "Arial, sans-serif",
@@ -278,7 +316,6 @@ const styles = {
     fontSize: "2rem",
     marginBottom: "20px",
     color: "#00000",
-
   },
   inputContainer: {
     display: "flex",
