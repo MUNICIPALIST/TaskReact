@@ -216,7 +216,7 @@ function App() {
             style={styles.input}
           />
           <button onClick={handleAddTask} style={styles.button}>
-          Add a TASK
+            Add a TASK
           </button>
         </div>
 
@@ -287,6 +287,19 @@ function App() {
             </div>
           ))}
         </div>
+
+        {/* Добавляем футер со ссылками */}
+        <footer style={styles.footer}>
+          <a href="https://github.com/MUNICIPALIST/TaskReact" target="_blank" rel="noopener noreferrer" style={styles.footerLink}>
+            🍌1
+          </a>
+          <a href="https://blog.bananadev.me/" target="_blank" rel="noopener noreferrer" style={styles.footerLink}>
+            📝
+          </a>
+          <a href="https://github.com/Kytar7/ToDoApp-spring-example-main" target="_blank" rel="noopener noreferrer" style={styles.footerLink}>
+            🍌2
+          </a>
+        </footer>
       </div>
     </div>
   );
@@ -311,6 +324,7 @@ const styles = {
     background: "linear-gradient(135deg, #ff9a9e, #fad0c4, #fbc2eb, #a18cd1, #5f72be, #29c1cb)",
     backgroundSize: "400% 400%",
     animation: "gradientBG 15s ease infinite",
+    position: "relative"
   },
   title: {
     fontSize: "2rem",
@@ -378,6 +392,7 @@ const styles = {
     flexDirection: "column",
     gap: "20px",
     alignItems: "center",
+    marginBottom: "80px"
   },
   taskCard: {
     border: "1px solid #ddd",
@@ -413,6 +428,7 @@ const styles = {
     border: "none",
     borderRadius: "5px",
     cursor: "pointer",
+    marginRight: "10px"
   },
   deleteButton: {
     marginTop: "10px",
@@ -423,6 +439,22 @@ const styles = {
     border: "none",
     borderRadius: "5px",
     cursor: "pointer",
+  },
+  footer: {
+    position: "absolute",
+    bottom: "20px",
+    width: "100%",
+    display: "flex",
+    justifyContent: "center",
+    gap: "40px"
+  },
+  footerLink: {
+    textDecoration: "none",
+    fontSize: "1.5rem",
+    color: "#000",
+    display: "flex",
+    alignItems: "center",
+    fontWeight: "bold"
   },
 };
 
