@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 
-const API_URL = "http://localhost:8080/api/tasks"; // Ваш URL бэкенда
+const API_URL = "/api/tasks"; // Ваш URL бэкенда
 
 // Получение задач с сервера
 const fetchTasks = async () => {
